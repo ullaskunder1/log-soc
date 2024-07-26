@@ -24,3 +24,9 @@ a:hover {
 section{
   width: 100%;
 }
+pre{
+  word-wrap: break-word;
+  word-break: break-all;
+  text-wrap: balance;
+  width: 100%;
+}

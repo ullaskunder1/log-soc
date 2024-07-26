@@ -79,12 +79,13 @@ interface YouTubeVideosResponse {
   items: YouTubeVideoDetail[];
 }
 
-const useYouTubeVideos = (channelId: string) => {
+const useYouTubeVideos = (channelId: string, isDisable: boolean = false) => {
   const [videos, setVideos] = useState<YouTubeVideosResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    if(isDisable) return;
     async function fetchData() {
       try {
         setLoading(true);
@@ -123,7 +124,7 @@ const useYouTubeVideos = (channelId: string) => {
         gapi.client.load('youtube', 'v3', fetchData);
       });
     }
-  }, [channelId]);
+  }, [channelId, isDisable]);
 
   return { videos, loading, error };
 };

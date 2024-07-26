@@ -15,13 +15,15 @@ const useYouTubeAnalytics = (
   startDate: string,
   endDate: string,
   metrics: string,
-  dimensions?: string
+  dimensions?: string,
+  isDisable: boolean = false
 ) => {
   const [data, setData] = useState<YouTubeAnalyticsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    if (isDisable) return;
     async function authenticate() {
       try {
         await gapi.auth2.getAuthInstance();
@@ -50,8 +52,8 @@ const useYouTubeAnalytics = (
         console.log("API FETCH auth 5=======")
         const response = await gapi.client.youtubeAnalytics.reports.query({
           "ids": "channel==MINE",
-          "startDate": "2017-01-01",
-          "endDate": "2017-12-31",
+          "startDate": "2024-05-01",
+          "endDate": "2024-07-01", 
           "metrics": "views,estimatedMinutesWatched,averageViewDuration,averageViewPercentage,subscribersGained",
           "dimensions": "day",
           "sort": "day"  
@@ -80,7 +82,7 @@ const useYouTubeAnalytics = (
         });
       }
     });
-  }, [startDate, endDate, metrics, dimensions]);
+  }, [startDate, endDate, metrics, dimensions, isDisable]);
 
   return { data, loading, error };
 };

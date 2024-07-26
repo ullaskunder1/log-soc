@@ -6,10 +6,12 @@ import styles from "./App.module.scss";
 import { gapi } from "gapi-script";
 import GoogleLogin from "react-google-login";
 import useYouTubeVideos from "./hooks/useYouTubeVideo";
+import InstagramLoginComponent from "./component/InstaLoginBtn";
 
 const App: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { state, dispatch } = useAuth();
+  const [selectedPlatform, setSelectedPlatform] = useState<string>("");
 
   const handleSuccess = (response: any) => {
     console.log("Login Success:", response);
@@ -36,6 +38,7 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
+    if(selectedPlatform !== 'youtube') return;
     function start() {
       const authInstance = gapi.auth2.getAuthInstance();
       if (!authInstance) {
@@ -49,23 +52,30 @@ const App: React.FC = () => {
     gapi.load("client:auth2", start);
   }, []);
 
-  useEffect(() => {
-    if (state.isLoggedIn) {
-    }
-  }, [state.isLoggedIn]);
-
-  const { data, loading, error } = useYouTubeAnalytics(
+  const {
+    data: youtubeData,
+    loading: youtubeLoading,
+    error: youtubeError
+  } = useYouTubeAnalytics(
     "2023-12-21",
     "2023-12-31",
     "views,estimatedMinutesWatched,averageViewDuration,averageViewPercentage,subscribersGained,viewerPercentage",
-    "gender"
+    "gender",
+    selectedPlatform !== "youtube"
   );
 
-console.log("=================>, channelId", state.youtubeInfo?.result?.items[0]?.id)
-  const { videos, loading: videosLoading, error: videosError } = useYouTubeVideos(state.youtubeInfo?.result?.items[0]?.id);
+  const {
+    videos,
+    loading: videosLoading,
+    error: videosError
+  } = useYouTubeVideos(
+    state.youtubeInfo?.result?.items[0]?.id,
+    selectedPlatform !== "youtube"
+  );
+
   // const { videos, loading: videosLoading, error: videosError } = useYouTubeVideos('UCviq8Ih6BhHmlLEtcXEG_XQ');
 
-  console.log("Fetched YouTube Analytics Data:", data);
+  console.log("Fetched YouTube Analytics Data:", youtubeData);
   console.log("Fetched YouTube Videos Data:", videos);
 
   const { body, ...youtubeInfoWithoutBody } = state.youtubeInfo || {};
@@ -73,6 +83,18 @@ console.log("=================>, channelId", state.youtubeInfo?.result?.items[0]
   return (
     <div>
       <Header />
+      <button
+          onClick={() => setSelectedPlatform("youtube")}
+          className={`${styles["auth-screen__platform-button"]} ${selectedPlatform === "youtube" ? styles["selected"] : ""}`}
+        >
+          YouTube
+        </button>
+        <button
+          onClick={() => setSelectedPlatform("instagram")}
+          className={`${styles["auth-screen__platform-button"]} ${selectedPlatform === "instagram" ? styles["selected"] : ""}`}
+        >
+          Instagram
+        </button>
       <div className={styles["auth-screen__social-auth"]}>
         <div className={styles["auth-screen__social-buttons"]}>
           <GoogleLogin
@@ -89,11 +111,7 @@ console.log("=================>, channelId", state.youtubeInfo?.result?.items[0]
           >
             Instagram
           </button>
-          <button
-            className={`${styles["auth-screen__social-button"]} ${styles["auth-screen__social-button--facebook"]}`}
-          >
-            Facebook
-          </button>
+          <InstagramLoginComponent />
           <button
             className={`${styles["auth-screen__social-button"]} ${styles["auth-screen__social-button--tiktok"]}`}
           >
@@ -114,15 +132,20 @@ console.log("=================>, channelId", state.youtubeInfo?.result?.items[0]
       </section>
       <section style={{ display: "flex" }}>
         <section>
-          <div>
+          <div style={{height: '500px', background: 'white', color: 'black', overflow: 'scroll'}}>
             <h2>YouTube Analytics Data</h2>
-            {loading && <p>Loading...</p>}
-            {error && !data && <p>Error: {error.message}</p>}
-            {data && <pre>{JSON.stringify(data, null, 2)}</pre>}
+            {youtubeLoading && <p>Loading...</p>}
+            {youtubeError && !youtubeData && <p>Error: {youtubeError.message}</p>}
+            {youtubeData && <pre>{JSON.stringify(youtubeData, null, 2)}</pre>}
           </div>
         </section>
         <section>
           <h2>Youtube video</h2>
+          {videosLoading && <p>Loading videos...</p>}
+          {videosError && !videos && <p>Error: {videosError.message}</p>}
+          <div className={styles['cardWrapper']}>
+          {videos && videos.items.map((video) => <VideoStats key={video.id} video={video} />)}
+          </div>
         </section>
       </section>
     </div>
@@ -130,3 +153,28 @@ console.log("=================>, channelId", state.youtubeInfo?.result?.items[0]
 };
 
 export default App;
+
+
+const VideoStats = ({ video }:any) => {
+  const { snippet, statistics } = video;
+  const thumbnailUrl = snippet.thumbnails.high.url;
+
+  return (
+    <div style={{ border: '1px solid #ddd', padding: '16px', margin: '16px', borderRadius: '8px', maxWidth: '400px' }}>
+      <img src={thumbnailUrl} alt={snippet.title} style={{ width: '100%', borderRadius: '8px' }} />
+      <h2 style={{ fontSize: '18px', margin: '8px 0' }}>{snippet.title}</h2>
+      <p>{(snippet.description).slice(0, 100)}</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
+        <div>
+          <strong>Views:</strong> {statistics.viewCount}
+        </div>
+        <div>
+          <strong>Likes:</strong> {statistics.likeCount}
+        </div>
+        <div>
+          <strong>Comments:</strong> {statistics.commentCount}
+        </div>
+      </div>
+    </div>
+  );
+};
